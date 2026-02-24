@@ -11,8 +11,10 @@ use Throwable;
 
 final class ProductGroupController extends Controller
 {
-    private Session $session;
-    private ProductGroup $model;
+    /** @var Session */
+    private $session;
+    /** @var ProductGroup */
+    private $model;
 
     public function __construct(Session $session)
     {

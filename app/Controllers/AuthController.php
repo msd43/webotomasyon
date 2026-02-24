@@ -11,9 +11,11 @@ use Throwable;
 
 final class AuthController extends Controller
 {
-    private Session $session;
+    /** @var Session */
+    private $session;
 
-    private PDO $db;
+    /** @var PDO */
+    private $db;
 
     public function __construct(Session $session)
     {

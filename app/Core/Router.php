@@ -8,7 +8,7 @@ final class Router
     /**
      * @var array<string, array<string, callable>>
      */
-    private array $routes = [];
+    private $routes = [];
 
     public function get(string $path, callable $handler): void
     {

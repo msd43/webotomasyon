@@ -9,7 +9,8 @@ use App\Core\Session;
 
 final class DashboardController extends Controller
 {
-    private Middleware $middleware;
+    /** @var Middleware */
+    private $middleware;
 
     public function __construct(Session $session)
     {

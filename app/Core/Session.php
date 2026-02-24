@@ -11,7 +11,8 @@ final class Session
     private const KEY_FLASH = '_flash';
     private const KEY_CSRF = '_csrf_token';
 
-    private int $regenerateInterval;
+    /** @var int */
+    private $regenerateInterval;
 
     public function __construct(int $regenerateInterval = 300)
     {

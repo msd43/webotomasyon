@@ -12,9 +12,12 @@ use Throwable;
 
 final class ProductController extends Controller
 {
-    private Session $session;
-    private Product $productModel;
-    private ProductGroup $groupModel;
+    /** @var Session */
+    private $session;
+    /** @var Product */
+    private $productModel;
+    /** @var ProductGroup */
+    private $groupModel;
 
     public function __construct(Session $session)
     {

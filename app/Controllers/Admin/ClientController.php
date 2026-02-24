@@ -11,11 +11,14 @@ use Throwable;
 
 final class ClientController extends Controller
 {
-    private Session $session;
+    /** @var Session */
+    private $session;
 
-    private Middleware $middleware;
+    /** @var Middleware */
+    private $middleware;
 
-    private Client $clientModel;
+    /** @var Client */
+    private $clientModel;
 
     public function __construct(Session $session)
     {

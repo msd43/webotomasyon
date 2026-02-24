@@ -8,7 +8,8 @@ use PDO;
 
 final class Client
 {
-    private PDO $db;
+    /** @var PDO */
+    private $db;
 
     public function __construct()
     {

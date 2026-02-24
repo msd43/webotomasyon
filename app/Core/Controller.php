@@ -5,7 +5,8 @@ namespace App\Core;
 
 abstract class Controller
 {
-    protected string $viewsPath;
+    /** @var string */
+    protected $viewsPath;
 
     public function __construct(?string $viewsPath = null)
     {

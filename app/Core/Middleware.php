@@ -5,7 +5,8 @@ namespace App\Core;
 
 final class Middleware
 {
-    private Session $session;
+    /** @var Session */
+    private $session;
 
     public function __construct(Session $session)
     {
