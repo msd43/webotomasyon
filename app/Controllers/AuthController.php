@@ -83,7 +83,7 @@ final class AuthController extends Controller
             $this->redirect('/login');
         }
 
-        if (password_verify($password, $passwordHash) && password_needs_rehash($passwordHash, PASSWORD_BCRYPT, ['cost' => 12])) {
+        if ($this->shouldRehashToBcrypt($passwordHash) && password_verify($password, $passwordHash)) {
             $rehash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
             if ($rehash !== false) {
                 $updateStmt = $this->db->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
@@ -133,6 +133,16 @@ final class AuthController extends Controller
             return true;
         }
 
+        if (strpos($storedHash, '$argon2id$') === 0 && function_exists('sodium_crypto_pwhash_str_verify')) {
+            try {
+                if (sodium_crypto_pwhash_str_verify($storedHash, $plainPassword)) {
+                    return true;
+                }
+            } catch (Throwable $exception) {
+                return false;
+            }
+        }
+
         $sha256 = hash('sha256', $plainPassword);
         if (hash_equals($storedHash, $sha256)) {
             return true;
@@ -144,5 +154,19 @@ final class AuthController extends Controller
         }
 
         return hash_equals($storedHash, $plainPassword);
+    }
+
+    private function shouldRehashToBcrypt(string $hash): bool
+    {
+        if ($hash === '' || strpos($hash, '$argon2id$') === 0) {
+            return false;
+        }
+
+        $info = password_get_info($hash);
+        if (!isset($info['algoName']) || !is_string($info['algoName'])) {
+            return false;
+        }
+
+        return strtolower($info['algoName']) === 'bcrypt' && password_needs_rehash($hash, PASSWORD_BCRYPT, ['cost' => 12]);
     }
 }
