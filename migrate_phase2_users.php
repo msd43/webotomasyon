@@ -9,7 +9,6 @@ if (!is_file($configFile)) {
 }
 
 $config = require $configFile;
-
 $dbConfig = $config['database'] ?? [];
 
 $host = (string) ($dbConfig['host'] ?? '127.0.0.1');
@@ -47,22 +46,25 @@ SQL;
     $pdo->exec($createTableSql);
 
     $plainPassword = '123456';
-    if (defined('PASSWORD_ARGON2ID')) {
-        $passwordHash = password_hash($plainPassword, PASSWORD_ARGON2ID);
-    } else {
-        $passwordHash = password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 12]);
-    }
+    $passwordHash = password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
     if ($passwordHash === false) {
         throw new RuntimeException('Password hashing failed for default super admin user.');
     }
 
-    $insertSql = <<<SQL
-INSERT IGNORE INTO users (role, first_name, last_name, email, password_hash, status, created_at, updated_at)
-VALUES (:role, :first_name, :last_name, :email, :password_hash, :status, NOW(), NOW());
+    $upsertSql = <<<SQL
+INSERT INTO users (role, first_name, last_name, email, password_hash, status, created_at, updated_at)
+VALUES (:role, :first_name, :last_name, :email, :password_hash, :status, NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+    role = VALUES(role),
+    first_name = VALUES(first_name),
+    last_name = VALUES(last_name),
+    password_hash = VALUES(password_hash),
+    status = VALUES(status),
+    updated_at = NOW();
 SQL;
 
-    $stmt = $pdo->prepare($insertSql);
+    $stmt = $pdo->prepare($upsertSql);
     $stmt->execute([
         ':role' => 'admin',
         ':first_name' => 'Super',
@@ -75,6 +77,7 @@ SQL;
     fwrite(STDOUT, "[OK] users table is ready and default super admin ensured.\n");
     fwrite(STDOUT, "[INFO] Default admin email: admin@mastervault.com\n");
     fwrite(STDOUT, "[INFO] Default admin password: 123456\n");
+    fwrite(STDOUT, "[INFO] Password hash algorithm forced to bcrypt for cross-environment compatibility.\n");
 } catch (Throwable $exception) {
     fwrite(STDERR, '[ERROR] Migration failed: ' . $exception->getMessage() . "\n");
     exit(1);
