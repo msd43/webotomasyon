@@ -60,7 +60,7 @@ final class AuthController extends Controller
 
         try {
             $stmt = $this->db->prepare(
-                'SELECT id, role, password_hash, status FROM users WHERE email = :email LIMIT 1'
+                'SELECT id, role, password_hash, status, email FROM users WHERE LOWER(email) = LOWER(:email) LIMIT 1'
             );
             $stmt->execute([':email' => $email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -78,9 +78,20 @@ final class AuthController extends Controller
         $status = (int) ($user['status'] ?? 0);
         $passwordHash = (string) ($user['password_hash'] ?? '');
 
-        if ($status !== 1 || $passwordHash === '' || !password_verify($password, $passwordHash)) {
+        if ($status !== 1 || !$this->verifyPassword($password, $passwordHash)) {
             $this->session->setFlash('error', 'Hatalı e-posta veya şifre');
             $this->redirect('/login');
+        }
+
+        if (password_verify($password, $passwordHash) && password_needs_rehash($passwordHash, PASSWORD_BCRYPT, ['cost' => 12])) {
+            $rehash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+            if ($rehash !== false) {
+                $updateStmt = $this->db->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
+                $updateStmt->execute([
+                    ':password_hash' => $rehash,
+                    ':id' => (int) $user['id'],
+                ]);
+            }
         }
 
         session_regenerate_id(true);
@@ -88,7 +99,7 @@ final class AuthController extends Controller
         $this->session->set('is_authenticated', true);
         $this->session->set('auth_user_id', (int) $user['id']);
         $this->session->set('auth_user_role', (string) $user['role']);
-        $this->session->set('auth_user_email', $email);
+        $this->session->set('auth_user_email', (string) ($user['email'] ?? $email));
 
         $role = (string) $user['role'];
 
@@ -110,5 +121,28 @@ final class AuthController extends Controller
     {
         $this->session->destroy();
         $this->redirect('/login');
+    }
+
+    private function verifyPassword(string $plainPassword, string $storedHash): bool
+    {
+        if ($storedHash === '') {
+            return false;
+        }
+
+        if (password_verify($plainPassword, $storedHash)) {
+            return true;
+        }
+
+        $sha256 = hash('sha256', $plainPassword);
+        if (hash_equals($storedHash, $sha256)) {
+            return true;
+        }
+
+        $md5 = md5($plainPassword);
+        if (hash_equals($storedHash, $md5)) {
+            return true;
+        }
+
+        return hash_equals($storedHash, $plainPassword);
     }
 }
