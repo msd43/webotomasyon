@@ -9,9 +9,11 @@ use RuntimeException;
 
 final class Database
 {
-    private static ?self $instance = null;
+    /** @var self|null */
+    private static $instance = null;
 
-    private PDO $connection;
+    /** @var PDO */
+    private $connection;
 
     /**
      * @param array<string, mixed> $config
